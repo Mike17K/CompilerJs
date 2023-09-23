@@ -1,0 +1,1 @@
+This is a language that is very similar to javascript but strictly typed.
