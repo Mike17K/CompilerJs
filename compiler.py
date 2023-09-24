@@ -1,46 +1,21 @@
+from helpers.comment_cleaner import cleanComments
 import os
 
 codeFile = open("code.txt", "r")
 codeText = codeFile.read()
 
-
-# remove all comments
-mode = None # can be "//" or "/*"
-adding = True
-uncommentedCodeText = ""
-
-i = 0
-while(i<len(codeText)):
-    letter = codeText[i]
-
-    if letter == "/" and mode == None:
-        if codeText[min(i+1,len(codeText)-1)] == "/":
-            mode = "//"
-        elif codeText[min(i+1,len(codeText)-1)] == "*":
-            mode = "/*"
-        adding = False
-    elif letter == "\n" and mode == "//":
-        adding = True
-        mode = None
-        
-    elif letter == "*" and mode == "/*":
-        if codeText[min(i+1,len(codeText)-1)] == "/":
-            mode = None
-            i += 2
-            adding = True
-    if adding:
-        uncommentedCodeText += codeText[i]
-    i += 1
-codeText = uncommentedCodeText
+codeText = cleanComments(codeText)
 
 
 
+symbols = ["'",'"',"`",'+', '-', '*', '/', '%', '^', '(', ')', '{', '}', '[', ']', ';', ':', ',', '.', '=', '<', '>', '!', '&', '|']
+openingSymbols = ['(', '{', '[', '"', "'","`"]
+closingSymbols = [')', '}', ']', '"', "'","`"]
 
-symbols = ["'",'"','+', '-', '*', '/', '%', '^', '(', ')', '{', '}', '[', ']', ';', ':', ',', '.', '=', '<', '>', '!', '&', '|']
-openingSymbols = ['(', '{', '[', '"', "'"]
-closingSymbols = [')', '}', ']', '"', "'"]
+types = ["let","var"]
 
 openingClosingPairs = {
+    "`":"`",
     "'": "'",
     '"': '"',
     '(': ')',
@@ -64,7 +39,7 @@ for i in range(len(codeText)):
     letter = codeText[i]
 
     lastSymbol = symbolStack[-1] if len(symbolStack)!=0 else ""
-    
+    lastCommand = commands[-1] if len(commands)!=0 else {"text":"", "type":"None"}
     # command check
     if letter in symbols or letter in [" ", "\n", "\t"]: 
         endIndex = i
@@ -75,7 +50,15 @@ for i in range(len(codeText)):
                 startIndex = None
                 endIndex = None
 
-                command["type"] = "string" if "'" in symbolStack or '"' in symbolStack else "command"
+                if "'" in symbolStack or '"' in symbolStack: 
+                    command["type"] = "string" 
+                elif command['text'] in types:
+                    command['type'] = "type"
+                elif lastCommand['type'] == "type":
+                    command['type'] = 'variable'
+                else:
+                    command['type'] = "unknown" # TODO FIX
+
                 commands.append(command)
     else:
         if startIndex == None:
@@ -101,5 +84,8 @@ for i in range(len(codeText)):
 isValid = True
 isValid = isValid and len(symbolStack) == 0
 
-print(commands)
+
+for c in commands:
+    print(c)
+
 print(isValid)
